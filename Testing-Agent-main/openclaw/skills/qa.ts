@@ -9,7 +9,7 @@ const SAMPLE_EMAIL = "qa.user@example.com";
 const SAMPLE_PASSWORD = "correct-horse";
 
 type Turn = { role: string; text: string };
-type Prepared = { handled: true; text: string } | { handled: false; brief: string };
+type Prepared = { handled: true; text: string } | { handled: false; brief: string; draft: string };
 type Outcome = "passed" | "failed" | "blocked" | "unjudged";
 type AgentRole = "qa" | "qa-runner" | "qa-analyst";
 type Mode = "all" | "read" | "missing" | "one";
@@ -79,6 +79,7 @@ export type QaSession = {
   runnerPhase: "verdict" | "expect" | "next" | null;
   lastRunIds: string[];
   modulePage: number;
+  lastDraft: string;
 };
 
 type Choice = { id: string; label: string; value: string };
@@ -190,9 +191,11 @@ export async function prepareQaTurn(squad: Squad, turns: Turn[], agentId = "qa")
   if (latest.trim().toLowerCase() === "cancel") return { handled: true, text: cancel(squad) };
 
   const role = normalizeRole(agentId);
-  if (role === "qa-analyst") return { handled: true, text: analyze(squad, latest) };
-  if (role === "qa-runner") return { handled: true, text: await runnerTurn(squad, latest, notice) };
-  return { handled: true, text: readerTurn(squad, latest, notice) };
+  const draft = role === "qa-analyst" ? analyze(squad, latest) : role === "qa-runner" ? await runnerTurn(squad, latest, notice) : readerTurn(squad, latest, notice);
+  const saved = squad.load();
+  if (!saved.ok) return { handled: true, text: screenJson(saved.error) };
+  if (!squad.save({ ...saved.session, lastDraft: draft })) return { handled: true, text: screenJson("I could not save this session.") };
+  return { handled: false, brief: qaBrief(squad.sessionPath, draft), draft };
 }
 
 export function settleQaReply(modelText: string): "execute" | "stay" | string {
@@ -204,21 +207,89 @@ export function settleQaReply(modelText: string): "execute" | "stay" | string {
   return modelText;
 }
 
-export async function settleQaModel(squad: Squad, modelText: string): Promise<string> {
+export async function settleQaModel(squad: Squad, modelText: string, draft?: string): Promise<string> {
+  const factsText = draft ?? storedDraft(squad);
+  const parsed = extractJson(modelText);
+  const tool = parsed && typeof parsed === "object" ? toolOf(parsed as Record<string, unknown>) : null;
+  const facts = factsText ? parseScreenRecord(factsText) : null;
+  if (tool === "qa.execute" && !facts?.action_proposal) return propose(squad, "all");
+  if (factsText) return speakFacts(modelText, factsText);
   const kind = settleQaReply(modelText);
   if (kind === "execute") return propose(squad, "all");
   if (kind === "stay") return screenJson("Tell me which area to test, such as users. I will suggest scenarios and wait for your approval.");
   return kind;
 }
 
-export function qaBrief(sessionPath: string): string {
+export function qaBrief(sessionPath: string, draft?: string): string {
   const loaded = readSession(sessionPath);
   const session = loaded.ok ? publicSession(loaded.session) : { error: loaded.error };
   return [
     "QA SQUAD: The reader stores a Swagger or OpenAPI document from an attached file or from the http or https URL the user gives. It follows $ref schemas in that document. The runner shows one scenario at a time, with the request and the expected status, and asks when a case needs a value the spec does not contain. After an approved call it shows the real status and response body. The analyst compares saved results with those expected statuses.",
     `SESSION: ${JSON.stringify(session)}`,
-    "Do not invent an expected status. Do not say a request was sent unless the session executions say so. Set action_proposal to null. To ask for a send, return {\"kind\":\"tool\",\"tool\":\"qa.execute\"}.",
-  ].join("\n");
+    draft ? `FACTS: ${draft}` : "",
+    "The tools already produced FACTS. Rephrase FACTS.screen.text in plain spoken language. Do not add endpoints, statuses, response bodies, or a claim that a request was sent unless those words are already in FACTS. Copy action_proposal and app_commands from FACTS unchanged. If FACTS has no action_proposal and the user wants the requests sent, return {\"kind\":\"tool\",\"tool\":\"qa.execute\"} instead of claiming they were sent.",
+  ].filter(Boolean).join("\n");
+}
+
+function storedDraft(squad: Squad): string | undefined {
+  const loaded = squad.load();
+  if (!loaded.ok || !loaded.session.lastDraft) return undefined;
+  return loaded.session.lastDraft;
+}
+
+function speakFacts(modelText: string, draft: string): string {
+  const facts = parseScreenRecord(draft);
+  if (!facts) return draft;
+  const spoken = spokenText(modelText);
+  if (!spoken || contradicts(spoken, facts)) return draft;
+  return JSON.stringify({
+    kind: "screen",
+    screen: { text: spoken, choices: facts.screen.choices, navigation: facts.screen.navigation },
+    action_proposal: facts.action_proposal,
+    app_commands: facts.app_commands,
+  });
+}
+
+function spokenText(modelText: string): string {
+  const parsed = extractJson(modelText);
+  if (parsed && typeof parsed === "object") {
+    const screen = (parsed as { screen?: { text?: unknown } }).screen;
+    if (screen && typeof screen.text === "string" && screen.text.trim()) return screen.text.trim();
+  }
+  const plain = modelText.trim();
+  return plain.startsWith("{") ? "" : plain;
+}
+
+function contradicts(spoken: string, facts: ScreenRecord): boolean {
+  const allowed = `${facts.screen.text} ${facts.action_proposal?.summary ?? ""} ${facts.action_proposal?.title ?? ""}`;
+  const paths = spoken.match(/\/[a-zA-Z0-9_{}.:-]+/g) ?? [];
+  for (const path of paths) {
+    const clean = path.replace(/[.,)]+$/, "");
+    if (clean.length > 1 && !allowed.includes(clean)) return true;
+  }
+  for (const code of spoken.match(/\bHTTP\s+\d{3}\b/gi) ?? []) {
+    if (!allowed.toLowerCase().includes(code.toLowerCase())) return true;
+  }
+  if (/\b(i sent|was sent|request was sent|already executed)\b/i.test(spoken) && !/\b(i sent|was sent|response:)\b/i.test(allowed)) return true;
+  return false;
+}
+
+type ScreenRecord = {
+  screen: { text: string; choices: Choice[]; navigation: string[] };
+  action_proposal: Proposal | null;
+  app_commands: Command[];
+};
+
+function parseScreenRecord(raw: string): ScreenRecord | null {
+  const parsed = extractJson(raw);
+  if (!parsed || typeof parsed !== "object") return null;
+  const record = parsed as { screen?: { text?: unknown; choices?: unknown; navigation?: unknown }; action_proposal?: unknown; app_commands?: unknown };
+  if (!record.screen || typeof record.screen.text !== "string") return null;
+  const choices = Array.isArray(record.screen.choices) ? record.screen.choices.filter((item): item is Choice => !!item && typeof item === "object" && typeof (item as Choice).id === "string") : [];
+  const navigation = Array.isArray(record.screen.navigation) ? record.screen.navigation.filter((item): item is string => typeof item === "string") : [];
+  const proposal = record.action_proposal && typeof record.action_proposal === "object" ? record.action_proposal as Proposal : null;
+  const commands = Array.isArray(record.app_commands) ? record.app_commands.filter((item): item is Command => !!item && typeof item === "object" && typeof (item as Command).name === "string") : [];
+  return { screen: { text: record.screen.text, choices, navigation }, action_proposal: proposal, app_commands: commands };
 }
 
 export function parseOpenApi(raw: string): { ok: true; operations: Operation[]; serverUrl: string | null } | { ok: false; error: string } {
@@ -989,7 +1060,7 @@ function publicSession(session: QaSession) {
 }
 
 function emptySession(): QaSession {
-  return { baseUrl: "", operations: [], scenarios: [], omitted: [], executions: [], pending: null, cursor: 0, focus: "", facts: { ids: {}, duplicateEmail: "", duplicateStatus: null }, pendingAsk: null, awaitingVerdict: false, runnerPhase: null, lastRunIds: [], modulePage: 0 };
+  return { baseUrl: "", operations: [], scenarios: [], omitted: [], executions: [], pending: null, cursor: 0, focus: "", facts: { ids: {}, duplicateEmail: "", duplicateStatus: null }, pendingAsk: null, awaitingVerdict: false, runnerPhase: null, lastRunIds: [], modulePage: 0, lastDraft: "" };
 }
 
 function readSession(file: string): { ok: true; session: QaSession } | { ok: false; error: string } {
@@ -1033,6 +1104,7 @@ function coerceSession(data: unknown): QaSession | null {
     runnerPhase: bag["runnerPhase"] === "verdict" || bag["runnerPhase"] === "expect" || bag["runnerPhase"] === "next" ? bag["runnerPhase"] : null,
     lastRunIds: Array.isArray(bag["lastRunIds"]) ? bag["lastRunIds"].filter((item): item is string => typeof item === "string") : [],
     modulePage: typeof bag["modulePage"] === "number" && bag["modulePage"] >= 0 ? Math.floor(bag["modulePage"]) : 0,
+    lastDraft: typeof bag["lastDraft"] === "string" ? bag["lastDraft"] : "",
   };
 }
 

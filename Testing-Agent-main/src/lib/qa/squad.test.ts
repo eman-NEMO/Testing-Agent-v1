@@ -15,9 +15,10 @@ function squad(dataDir: string, fetchImpl?: (input: string, init?: RequestInit) 
   return openSquad({ dir: dataDir, fetchImpl });
 }
 
-function answered(prepared: { handled: boolean; text?: string; brief?: string }) {
-  if (!prepared.handled || !prepared.text) throw new Error(prepared.brief ?? "expected a handled turn");
-  return prepared.text;
+function answered(prepared: { handled: boolean; text?: string; draft?: string; brief?: string }) {
+  if (prepared.handled && prepared.text) return prepared.text;
+  if (prepared.draft) return prepared.draft;
+  throw new Error(prepared.brief ?? "expected a screen");
 }
 
 function screen(raw: string) {
@@ -309,5 +310,33 @@ describe("qa squad", () => {
     const asked = screen(await settleQaModel(book, "{\"kind\":\"tool\",\"tool\":\"qa.execute\"}"));
     assert.equal(asked.action_proposal?.tool, "qa.execute");
     assert.equal(calls, 0);
+  });
+
+  it("asks the model to phrase the facts and keeps the real approval card", async () => {
+    const book = squad(dir());
+    const intro = { role: "user", text: `API http://127.0.0.1:4010\n${SPEC}` };
+    await prepareQaTurn(book, [intro]);
+    await prepareQaTurn(book, [intro, { role: "user", text: "Test users" }], "qa-runner");
+    const prepared = await prepareQaTurn(book, [intro, { role: "user", text: "Test users" }, { role: "user", text: "Run all of these" }], "qa-runner");
+    assert.equal(prepared.handled, false);
+    if (prepared.handled) return;
+    const facts = screen(prepared.draft);
+    const spoken = screen(await settleQaModel(book, JSON.stringify({
+      kind: "screen",
+      screen: { text: "These requests are ready. I need your OK before I send them to 127.0.0.1:4010.", choices: [], navigation: [] },
+      action_proposal: null,
+      app_commands: [],
+    })));
+    assert.match(spoken.screen.text, /I need your OK/);
+    assert.equal(spoken.action_proposal?.id, facts.action_proposal?.id);
+    assert.equal(spoken.action_proposal?.tool, "qa.execute");
+    const invented = screen(await settleQaModel(book, JSON.stringify({
+      kind: "screen",
+      screen: { text: "I sent POST /api/not-real and it returned HTTP 204.", choices: [], navigation: [] },
+      action_proposal: null,
+      app_commands: [],
+    })));
+    assert.equal(invented.screen.text, facts.screen.text);
+    assert.equal(invented.action_proposal?.id, facts.action_proposal?.id);
   });
 });

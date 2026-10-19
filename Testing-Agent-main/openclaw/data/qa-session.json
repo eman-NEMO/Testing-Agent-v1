@@ -2,37 +2,8 @@
   "baseUrl": "http://127.0.0.1:4011",
   "operations": [
     {
-      "method": "post",
-      "path": "/api/users",
-      "required": [
-        "email",
-        "password",
-        "name"
-      ],
-      "props": [
-        {
-          "name": "email",
-          "type": "string",
-          "format": "email"
-        },
-        {
-          "name": "password",
-          "type": "string",
-          "minLength": 8
-        },
-        {
-          "name": "name",
-          "type": "string",
-          "minLength": 1
-        }
-      ],
-      "successStatus": 201,
-      "invalidStatus": 400,
-      "notFoundStatus": null
-    },
-    {
       "method": "get",
-      "path": "/api/tasks",
+      "path": "/api/books",
       "required": [],
       "props": [],
       "successStatus": 200,
@@ -41,15 +12,31 @@
     },
     {
       "method": "post",
-      "path": "/api/tasks",
+      "path": "/api/books",
       "required": [
-        "title"
+        "title",
+        "author",
+        "isbn",
+        "price"
       ],
       "props": [
         {
           "name": "title",
           "type": "string",
           "minLength": 1
+        },
+        {
+          "name": "author",
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "name": "isbn",
+          "type": "string"
+        },
+        {
+          "name": "price",
+          "type": "number"
         }
       ],
       "successStatus": 201,
@@ -58,7 +45,7 @@
     },
     {
       "method": "get",
-      "path": "/api/tasks/{id}",
+      "path": "/api/books/{id}",
       "required": [],
       "props": [],
       "successStatus": 200,
@@ -67,7 +54,52 @@
     },
     {
       "method": "delete",
-      "path": "/api/tasks/{id}",
+      "path": "/api/books/{id}",
+      "required": [],
+      "props": [],
+      "successStatus": 200,
+      "invalidStatus": null,
+      "notFoundStatus": 404
+    },
+    {
+      "method": "get",
+      "path": "/api/orders",
+      "required": [],
+      "props": [],
+      "successStatus": 200,
+      "invalidStatus": null,
+      "notFoundStatus": null
+    },
+    {
+      "method": "post",
+      "path": "/api/orders",
+      "required": [
+        "bookId",
+        "quantity",
+        "customerEmail"
+      ],
+      "props": [
+        {
+          "name": "bookId",
+          "type": "integer"
+        },
+        {
+          "name": "quantity",
+          "type": "integer"
+        },
+        {
+          "name": "customerEmail",
+          "type": "string",
+          "format": "email"
+        }
+      ],
+      "successStatus": 201,
+      "invalidStatus": 400,
+      "notFoundStatus": null
+    },
+    {
+      "method": "get",
+      "path": "/api/orders/{id}",
       "required": [],
       "props": [],
       "successStatus": 200,
@@ -77,84 +109,148 @@
   ],
   "scenarios": [
     {
-      "id": "case_0_get_api_tasks_valid_request",
-      "name": "Valid request GET /api/tasks",
+      "id": "case_0_get_api_books_valid_request",
+      "name": "Valid request GET /api/books",
       "method": "GET",
-      "path": "/api/tasks",
+      "path": "/api/books",
       "body": null,
       "expectedStatus": null,
       "createsData": false
     },
     {
-      "id": "case_1_post_api_tasks_valid_request",
-      "name": "Valid request POST /api/tasks",
+      "id": "case_1_post_api_books_valid_request",
+      "name": "Valid request POST /api/books",
       "method": "POST",
-      "path": "/api/tasks",
+      "path": "/api/books",
       "body": {
-        "title": "sample"
+        "title": "sample",
+        "author": "sample",
+        "isbn": "sample",
+        "price": 1
       },
       "expectedStatus": null,
       "createsData": true
     },
     {
-      "id": "case_2_post_api_tasks_missing_title",
-      "name": "Missing title POST /api/tasks",
+      "id": "case_2_post_api_books_missing_title",
+      "name": "Missing title POST /api/books",
       "method": "POST",
-      "path": "/api/tasks",
-      "body": {},
+      "path": "/api/books",
+      "body": {
+        "author": "sample",
+        "isbn": "sample",
+        "price": 1
+      },
       "expectedStatus": null,
       "createsData": false
     },
     {
-      "id": "case_3_get_api_tasks_missing_id_missing_id",
-      "name": "Missing id GET /api/tasks/missing-id",
+      "id": "case_3_post_api_books_missing_author",
+      "name": "Missing author POST /api/books",
+      "method": "POST",
+      "path": "/api/books",
+      "body": {
+        "title": "sample",
+        "isbn": "sample",
+        "price": 1
+      },
+      "expectedStatus": null,
+      "createsData": false
+    },
+    {
+      "id": "case_4_post_api_books_missing_isbn",
+      "name": "Missing isbn POST /api/books",
+      "method": "POST",
+      "path": "/api/books",
+      "body": {
+        "title": "sample",
+        "author": "sample",
+        "price": 1
+      },
+      "expectedStatus": null,
+      "createsData": false
+    },
+    {
+      "id": "case_5_post_api_books_missing_price",
+      "name": "Missing price POST /api/books",
+      "method": "POST",
+      "path": "/api/books",
+      "body": {
+        "title": "sample",
+        "author": "sample",
+        "isbn": "sample"
+      },
+      "expectedStatus": null,
+      "createsData": false
+    },
+    {
+      "id": "case_6_get_api_books_bucks_valid_request",
+      "name": "Valid request GET /api/books/Bucks",
       "method": "GET",
-      "path": "/api/tasks/missing-id",
+      "path": "/api/books/Bucks",
       "body": null,
       "expectedStatus": null,
       "createsData": false
     },
     {
-      "id": "case_4_delete_api_tasks_missing_id_missing_id",
-      "name": "Missing id DELETE /api/tasks/missing-id",
+      "id": "case_7_get_api_books_missing_id_missing_id",
+      "name": "Missing id GET /api/books/missing-id",
+      "method": "GET",
+      "path": "/api/books/missing-id",
+      "body": null,
+      "expectedStatus": null,
+      "createsData": false
+    },
+    {
+      "id": "case_8_delete_api_books_bucks_valid_request",
+      "name": "Valid request DELETE /api/books/Bucks",
       "method": "DELETE",
-      "path": "/api/tasks/missing-id",
+      "path": "/api/books/Bucks",
+      "body": null,
+      "expectedStatus": null,
+      "createsData": true
+    },
+    {
+      "id": "case_9_delete_api_books_missing_id_missing_id",
+      "name": "Missing id DELETE /api/books/missing-id",
+      "method": "DELETE",
+      "path": "/api/books/missing-id",
       "body": null,
       "expectedStatus": null,
       "createsData": false
     }
   ],
-  "omitted": [
-    "GET /api/tasks/{id} needs an existing id for the success case. Tell me that id, such as existing id 42.",
-    "DELETE /api/tasks/{id} needs an existing id for the success case. Tell me that id, such as existing id 42."
-  ],
+  "omitted": [],
   "executions": [
     {
-      "caseId": "case_2_post_api_tasks_missing_title",
-      "name": "Missing title POST /api/tasks",
+      "caseId": "case_1_post_api_books_valid_request",
+      "name": "Valid request POST /api/books",
       "method": "POST",
-      "path": "/api/tasks",
-      "expectedStatus": null,
-      "actualStatus": null,
-      "responseBody": "",
+      "path": "/api/books",
+      "expectedStatus": 400,
+      "actualStatus": 400,
+      "responseBody": "{\"error\":\"isbn must be 13 digits\"}",
       "outcome": "passed",
       "reason": "You said this result was expected.",
-      "shouldReturn": "no HTTP status"
+      "shouldReturn": "{\"error\":\"isbn must be 13 digits\"}"
     }
   ],
   "pending": null,
   "cursor": 0,
-  "focus": "tasks",
+  "focus": "books",
   "facts": {
-    "ids": {},
+    "ids": {
+      "/api/books/{id}": "Bucks"
+    },
     "duplicateEmail": "",
     "duplicateStatus": null
   },
-  "pendingAsk": "id",
+  "pendingAsk": null,
   "awaitingVerdict": false,
   "runnerPhase": null,
   "lastRunIds": [
-    "case_2_post_api_tasks_missing_title"
+    "case_1_post_api_books_valid_request"
   ],
-  "modulePage": 0
+  "modulePage": 0,
+  "lastDraft": "{\"kind\":\"screen\",\"screen\":{\"text\":\"1 passed. 1. POST /api/books, HTTP 400. You said this result was expected.\",\"choices\":[{\"id\":\"count_runs\",\"label\":\"How many passed and failed\",\"value\":\"How many passed and failed\"},{\"id\":\"list_passed\",\"label\":\"List passed\",\"value\":\"List passed\"},{\"id\":\"list_failed\",\"label\":\"List failed\",\"value\":\"List failed\"}],\"navigation\":[]},\"action_proposal\":null,\"app_commands\":[]}"
 }
