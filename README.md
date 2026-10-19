@@ -6,7 +6,7 @@ A voice QA squad for the Dark Coders console.
 
 Three agents test the API you point them at.
 
-- 📖 **QA Reader** takes a Swagger file or URL. It fetches that spec, follows the schemas, and stores it. If something important is missing, it asks.
+- **QA Reader** takes a Swagger URL. It fetches that spec, follows the schemas, and stores it. If something important is missing, it asks.
 
 Say **scan swagger running on url local host port 4011**. In this example the reader stores 5 endpoints for `http://127.0.0.1:4011`: `POST /api/users`, `GET /api/tasks`, `POST /api/tasks`, `GET /api/tasks/{id}`, and `DELETE /api/tasks/{id}`. It notes that users need email, password, and name, and that tasks need a title. Then it switches to the runner.
 
