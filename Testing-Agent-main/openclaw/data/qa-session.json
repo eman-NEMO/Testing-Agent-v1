@@ -1,0 +1,160 @@
+{
+  "baseUrl": "http://127.0.0.1:4011",
+  "operations": [
+    {
+      "method": "post",
+      "path": "/api/users",
+      "required": [
+        "email",
+        "password",
+        "name"
+      ],
+      "props": [
+        {
+          "name": "email",
+          "type": "string",
+          "format": "email"
+        },
+        {
+          "name": "password",
+          "type": "string",
+          "minLength": 8
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "minLength": 1
+        }
+      ],
+      "successStatus": 201,
+      "invalidStatus": 400,
+      "notFoundStatus": null
+    },
+    {
+      "method": "get",
+      "path": "/api/tasks",
+      "required": [],
+      "props": [],
+      "successStatus": 200,
+      "invalidStatus": null,
+      "notFoundStatus": null
+    },
+    {
+      "method": "post",
+      "path": "/api/tasks",
+      "required": [
+        "title"
+      ],
+      "props": [
+        {
+          "name": "title",
+          "type": "string",
+          "minLength": 1
+        }
+      ],
+      "successStatus": 201,
+      "invalidStatus": 400,
+      "notFoundStatus": null
+    },
+    {
+      "method": "get",
+      "path": "/api/tasks/{id}",
+      "required": [],
+      "props": [],
+      "successStatus": 200,
+      "invalidStatus": null,
+      "notFoundStatus": 404
+    },
+    {
+      "method": "delete",
+      "path": "/api/tasks/{id}",
+      "required": [],
+      "props": [],
+      "successStatus": 200,
+      "invalidStatus": null,
+      "notFoundStatus": 404
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "case_0_get_api_tasks_valid_request",
+      "name": "Valid request GET /api/tasks",
+      "method": "GET",
+      "path": "/api/tasks",
+      "body": null,
+      "expectedStatus": null,
+      "createsData": false
+    },
+    {
+      "id": "case_1_post_api_tasks_valid_request",
+      "name": "Valid request POST /api/tasks",
+      "method": "POST",
+      "path": "/api/tasks",
+      "body": {
+        "title": "sample"
+      },
+      "expectedStatus": null,
+      "createsData": true
+    },
+    {
+      "id": "case_2_post_api_tasks_missing_title",
+      "name": "Missing title POST /api/tasks",
+      "method": "POST",
+      "path": "/api/tasks",
+      "body": {},
+      "expectedStatus": null,
+      "createsData": false
+    },
+    {
+      "id": "case_3_get_api_tasks_missing_id_missing_id",
+      "name": "Missing id GET /api/tasks/missing-id",
+      "method": "GET",
+      "path": "/api/tasks/missing-id",
+      "body": null,
+      "expectedStatus": null,
+      "createsData": false
+    },
+    {
+      "id": "case_4_delete_api_tasks_missing_id_missing_id",
+      "name": "Missing id DELETE /api/tasks/missing-id",
+      "method": "DELETE",
+      "path": "/api/tasks/missing-id",
+      "body": null,
+      "expectedStatus": null,
+      "createsData": false
+    }
+  ],
+  "omitted": [
+    "GET /api/tasks/{id} needs an existing id for the success case. Tell me that id, such as existing id 42.",
+    "DELETE /api/tasks/{id} needs an existing id for the success case. Tell me that id, such as existing id 42."
+  ],
+  "executions": [
+    {
+      "caseId": "case_2_post_api_tasks_missing_title",
+      "name": "Missing title POST /api/tasks",
+      "method": "POST",
+      "path": "/api/tasks",
+      "expectedStatus": null,
+      "actualStatus": null,
+      "responseBody": "",
+      "outcome": "passed",
+      "reason": "You said this result was expected.",
+      "shouldReturn": "no HTTP status"
+    }
+  ],
+  "pending": null,
+  "cursor": 0,
+  "focus": "tasks",
+  "facts": {
+    "ids": {},
+    "duplicateEmail": "",
+    "duplicateStatus": null
+  },
+  "pendingAsk": "id",
+  "awaitingVerdict": false,
+  "runnerPhase": null,
+  "lastRunIds": [
+    "case_2_post_api_tasks_missing_title"
+  ],
+  "modulePage": 0
+}

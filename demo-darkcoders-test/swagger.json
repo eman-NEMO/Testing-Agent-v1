@@ -1,0 +1,440 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Local Bookstore API",
+    "description": "In-memory REST API with two modules: books and orders. POST /api/books and POST /api/orders create data. GET /api/books, GET /api/books/{id}, GET /api/orders, and GET /api/orders/{id} are read-only. DELETE /api/books/{id} removes a book. No authentication secret is required.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:4011"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Books",
+      "description": "Catalog of books"
+    },
+    {
+      "name": "Orders",
+      "description": "Orders placed against the catalog"
+    }
+  ],
+  "paths": {
+    "/api/books": {
+      "get": {
+        "tags": ["Books"],
+        "operationId": "listBooks",
+        "summary": "List books",
+        "description": "Returns the in-memory book catalog. Read-only.",
+        "responses": {
+          "200": {
+            "description": "In-memory book catalog",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Book"
+                  }
+                },
+                "example": [
+                  {
+                    "id": 1,
+                    "title": "The Left Hand of Darkness",
+                    "author": "Ursula K. Le Guin",
+                    "isbn": "9780441478125",
+                    "price": 12.5
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Books"],
+        "operationId": "createBook",
+        "summary": "Add a book",
+        "description": "Creates a book. Required fields are title (minLength 1), author (minLength 1), isbn (13 digits), and price (number, minimum 0).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BookCreate"
+              },
+              "example": {
+                "title": "The Left Hand of Darkness",
+                "author": "Ursula K. Le Guin",
+                "isbn": "9780441478125",
+                "price": 12.5
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Book created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Book"
+                },
+                "example": {
+                  "id": 1,
+                  "title": "The Left Hand of Darkness",
+                  "author": "Ursula K. Le Guin",
+                  "isbn": "9780441478125",
+                  "price": 12.5
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "isbn must be 13 digits"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/books/{id}": {
+      "get": {
+        "tags": ["Books"],
+        "operationId": "getBook",
+        "summary": "Get a book by id",
+        "description": "Returns one book. Read-only. Unknown ids return 404.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Book id",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Book",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Book"
+                },
+                "example": {
+                  "id": 1,
+                  "title": "The Left Hand of Darkness",
+                  "author": "Ursula K. Le Guin",
+                  "isbn": "9780441478125",
+                  "price": 12.5
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Book not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Book not found"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Books"],
+        "operationId": "deleteBook",
+        "summary": "Delete a book by id",
+        "description": "Removes one book from memory and returns it. Unknown ids return 404.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Book id",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Book deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Book"
+                },
+                "example": {
+                  "id": 1,
+                  "title": "The Left Hand of Darkness",
+                  "author": "Ursula K. Le Guin",
+                  "isbn": "9780441478125",
+                  "price": 12.5
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Book not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Book not found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders": {
+      "get": {
+        "tags": ["Orders"],
+        "operationId": "listOrders",
+        "summary": "List orders",
+        "description": "Returns the in-memory order list. Read-only.",
+        "responses": {
+          "200": {
+            "description": "In-memory order list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Order"
+                  }
+                },
+                "example": [
+                  {
+                    "id": 1,
+                    "bookId": 1,
+                    "quantity": 2,
+                    "customerEmail": "ada@example.com"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Orders"],
+        "operationId": "createOrder",
+        "summary": "Place an order",
+        "description": "Creates an order for an existing book. Required fields are bookId (positive integer), quantity (integer, minimum 1), and customerEmail (email format).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderCreate"
+              },
+              "example": {
+                "bookId": 1,
+                "quantity": 2,
+                "customerEmail": "ada@example.com"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Order created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                },
+                "example": {
+                  "id": 1,
+                  "bookId": 1,
+                  "quantity": 2,
+                  "customerEmail": "ada@example.com"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "quantity must be an integer of at least 1"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders/{id}": {
+      "get": {
+        "tags": ["Orders"],
+        "operationId": "getOrder",
+        "summary": "Get an order by id",
+        "description": "Returns one order. Read-only. Unknown ids return 404.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Order id",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Order"
+                },
+                "example": {
+                  "id": 1,
+                  "bookId": 1,
+                  "quantity": 2,
+                  "customerEmail": "ada@example.com"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Order not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "Order not found"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BookCreate": {
+        "type": "object",
+        "required": ["title", "author", "isbn", "price"],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "author": {
+            "type": "string",
+            "minLength": 1
+          },
+          "isbn": {
+            "type": "string",
+            "pattern": "^\\d{13}$"
+          },
+          "price": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      "Book": {
+        "type": "object",
+        "required": ["id", "title", "author", "isbn", "price"],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "author": {
+            "type": "string"
+          },
+          "isbn": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          }
+        }
+      },
+      "OrderCreate": {
+        "type": "object",
+        "required": ["bookId", "quantity", "customerEmail"],
+        "properties": {
+          "bookId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "customerEmail": {
+            "type": "string",
+            "format": "email"
+          }
+        }
+      },
+      "Order": {
+        "type": "object",
+        "required": ["id", "bookId", "quantity", "customerEmail"],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "bookId": {
+            "type": "integer"
+          },
+          "quantity": {
+            "type": "integer"
+          },
+          "customerEmail": {
+            "type": "string",
+            "format": "email"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
