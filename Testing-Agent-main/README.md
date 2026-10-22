@@ -4,6 +4,10 @@ A DarkCoders voice, chat, and 3D WebXR console designed for multi-agent orchestr
 
 > **Candidates:** Read **[`ASSIGNMENT.md`](./ASSIGNMENT.md)** for full assignment instructions, architecture integration points, and deliverables.
 
+## API tester
+
+The agent behind this console reads a Swagger or OpenAPI JSON URL, suggests cases from that document, and waits for approval before it calls an endpoint or saves a report. Setup and the skill list are in [`openclaw/README.md`](./openclaw/README.md). Select **API tester** in the console after the gateway is running.
+
 ## Quick Start
 
 ```bash
@@ -29,12 +33,6 @@ npm run dev
 - `npm run typecheck` — Run TypeScript compiler checks (`tsc --noEmit`)
 - `npm test` — Run the unit test suite (`node --test`)
 - `npm run lint` — Run ESLint
-
-## QA Squad
-
-**QA Reader**, **QA Runner**, and **QA Analyst** share one session. The reader stores a Swagger file you attach or the `http` or `https` URL you give, such as `/swagger.json`. The runner suggests scenarios for the area you name and sends them only after Approve. The analyst compares those results with the spec. Details are in [`openclaw/README.md`](openclaw/README.md).
-
-An AI coding assistant in Cursor implemented the squad, its tests, and these notes from the assignment brief.
 
 ## Architecture Reference
 

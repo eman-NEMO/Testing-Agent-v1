@@ -1,0 +1,62 @@
+{
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/books",
+      "description": "List books",
+      "success_case": "GET /api/books returns 200 OK with a JSON array of book objects",
+      "missing_required": "N/A - GET endpoint has no required fields listed in the spec",
+      "auth_case": "Not applicable - no security scheme defined in the parsed spec"
+    },
+    {
+      "method": "POST",
+      "path": "/api/books",
+      "description": "Add a book",
+      "required_fields": ["title", "author", "isbn", "price"],
+      "success_case": "POST /api/books with title, author, isbn, price returns 201 Created or 200 OK",
+      "missing_required_case": "Omitting any required field (title, author, isbn, or price) causes the client to be rejected with 400 Bad Request",
+      "auth_case": "Not applicable - no security scheme defined in the parsed spec"
+    },
+    {
+      "method": "GET",
+      "path": "/api/books/{id}",
+      "description": "Get a book by id",
+      "success_case": "GET /api/books/{id} returns 200 OK with the book object matching the given ID",
+      "missing_required_case": "Omitting the {id} path parameter causes 404 Not Found or 400 Bad Request",
+      "auth_case": "Not applicable - no security scheme defined in the parsed spec"
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/books/{id}",
+      "description": "Delete a book by id",
+      "success_case": "DELETE /api/books/{id} returns 200 OK or 204 No Content",
+      "missing_required_case": "Omitting the {id} path parameter causes 404 Not Found or 400 Bad Request",
+      "auth_case": "Not applicable - no security scheme defined in the parsed spec"
+    }
+  ],
+  "remaining_endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/orders",
+      "description": "List orders",
+      "success_case": "GET /api/orders returns 200 OK with a JSON array of order objects",
+      "missing_required": "N/A - GET endpoint has no required fields listed"
+    },
+    {
+      "method": "POST",
+      "path": "/api/orders",
+      "description": "Place an order",
+      "required_fields": ["bookId", "quantity", "customerEmail"],
+      "success_case": "POST /api/orders with bookId, quantity, customerEmail returns 201 Created or 200 OK",
+      "missing_required_case": "Omitting any required field (bookId, quantity, or customerEmail) causes 400 Bad Request",
+      "auth_case": "Not applicable - no security scheme defined"
+    },
+    {
+      "method": "GET",
+      "path": "/api/orders/{id}",
+      "description": "Get an order by id",
+      "success_case": "GET /api/orders/{id} returns 200 OK with the order object matching the given ID",
+      "missing_required_case": "Omitting the {id} path parameter causes 404 Not Found or 400 Bad Request"
+    }
+  ]
+}

@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { agentIdFromContext, defaultDataDir, isQaAgent, openSquad, prepareQaTurn, settleQaModel } from "@/lib/qa/squad";
 import { JSON_INSTRUCTION, SYSTEM_PROMPT, planContextMessage } from "@/lib/voice/prompt";
 
 type Turn = { role: "user" | "assistant"; text: string };
@@ -49,14 +48,10 @@ export const Route = createFileRoute("/api/llm")({
         } catch (error) {
           return json({ error: error instanceof Error ? error.message : "Vault lookup failed" }, 502);
         }
-        const plan = planContextMessage(body.context);
-        const qaId = agentIdFromContext(body.context);
-        const qaAgent = isQaAgent(qaId);
-        const squad = qaAgent ? openSquad({ dir: defaultDataDir() }) : null;
-        const prepared = squad ? await prepareQaTurn(squad, turns, qaId ?? "qa") : null;
-        if (prepared?.handled) return json({ text: prepared.text });
         if (!key) return json({ error: "No API key provided for this provider" }, 400);
-        const system = [SYSTEM_PROMPT, JSON_INSTRUCTION, plan, prepared && !prepared.handled ? prepared.brief : null].filter(Boolean).join("\n\n");
+
+        const plan = planContextMessage(body.context);
+        const system = [SYSTEM_PROMPT, JSON_INSTRUCTION, plan].filter(Boolean).join("\n\n");
         const messages = turns.map((t) => ({ role: t.role, content: t.text }));
 
         try {
@@ -80,11 +75,10 @@ export const Route = createFileRoute("/api/llm")({
             return json({ error: `${kind} returned ${res.status}: ${detail}` }, res.status);
           }
           const data = (await res.json()) as { content?: { type: string; text?: string }[]; choices?: { message?: { content?: string } }[] };
-          const raw = kind === "anthropic"
+          const text = kind === "anthropic"
             ? (data.content ?? []).filter((c) => c.type === "text").map((c) => c.text ?? "").join("")
             : data.choices?.[0]?.message?.content ?? "";
-          if (!raw.trim()) return json({ error: "The provider returned an empty answer" }, 502);
-          const text = squad ? await settleQaModel(squad, raw) : raw;
+          if (!text.trim()) return json({ error: "The provider returned an empty answer" }, 502);
           return json({ text });
         } catch (error) {
           if (request.signal.aborted) return new Response(null, { status: 499 });
