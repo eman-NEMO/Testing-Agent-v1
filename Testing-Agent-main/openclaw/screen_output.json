@@ -1,0 +1,12 @@
+{
+  "kind": "screen",
+  "screen": {
+    "text": "Here are test cases for the first 4 endpoints from the Local Bookstore API scan. GET /api/books lists books and returns 200 OK. POST /api/books adds a book requiring title, author, isbn, price - test missing fields cause rejection. GET /api/books/{id} retrieves a single book - omit the ID to trigger 404. DELETE /api/books/{id} deletes a book - omit the ID to trigger 404. All cases use the documented success status and required fields from the parsed spec. Would you like test cases for the remaining 3 endpoints: orders listing, placing an order, and getting a specific order?",
+    "choices": [
+      { "id": "next_cases", "label": "Next 3 endpoints", "value": "Next 3 endpoints" }
+    ],
+    "navigation": ["cancel"]
+  },
+  "action_proposal": null,
+  "app_commands": []
+}

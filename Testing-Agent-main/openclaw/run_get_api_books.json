@@ -1,0 +1,13 @@
+{
+  "kind": "screen",
+  "screen": {
+    "text": "Getting all books from the Local Bookstore API",
+    "choices": [
+      { "id": "list_books", "label": "List books", "value": "List books" },
+      { "id": "test_missing", "label": "Test missing fields", "value": "Test missing fields" }
+    ],
+    "navigation": ["cancel", "back"]
+  },
+  "action_proposal": null,
+  "app_commands": []
+}

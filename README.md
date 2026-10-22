@@ -1,32 +1,27 @@
 # 🎙️ Testing Agent
 
-A voice QA squad for the Dark Coders console.
+A voice API tester for the Dark Coders console.
 
 ## 💡 Idea
 
-Three agents test the API you point them at.
+One agent, **API tester**, checks the API whose Swagger or OpenAPI JSON URL you give it.
 
-- **QA Reader** takes a Swagger URL. It fetches that spec, follows the schemas, and stores it. If something important is missing, it asks.
+- 📥 **fetch-spec** downloads that document and lists only the endpoints the parser found. For `http://127.0.0.1:4011/swagger` it reported the Local Bookstore API, version 1.0.0, with seven endpoints:
 
-Say **scan swagger running on url local host port 4011**. In this example the reader stores 5 endpoints for `http://127.0.0.1:4011`: `POST /api/users`, `GET /api/tasks`, `POST /api/tasks`, `GET /api/tasks/{id}`, and `DELETE /api/tasks/{id}`. It notes that users need email, password, and name, and that tasks need a title. Then it switches to the runner.
+  ![Fetched the Local Bookstore spec](images/fetch-spec.png)
+- 🧪 **suggest-cases** suggests a success case, a missing-required-field case, and an auth case only when the spec declares security. You can type extra requirements. After `GET /api/books` returned an empty list, the tester offered to suggest the remaining cases:
 
-![Reader stored 5 endpoints from the local Swagger](images/qa-reader.png)
+  ![Tester offers to suggest the remaining cases](images/suggest-cases.png)
+- ▶️ **run-case** sends one request only after you approve it, then reports the real status. The approval card for `GET /api/books` is the example:
 
-- ▶️ **QA Runner** shows the areas from the spec. You pick one. It suggests test cases, and you can add your own. It sends a request only after you approve, then shows the status and the response. You say if that result was right.
+  ![Approval card before running GET /api/books](images/run-case.png)
+- 📊 **write-report** saves the analysis only after a separate approval. An example is [`Testing-Agent-main/openclaw/reports/analysis-report.md`](Testing-Agent-main/openclaw/reports/analysis-report.md).
 
-The runner prepares the call and waits. In this example it wants to `POST http://127.0.0.1:4011/api/users`. The approval card says this creates data. **Approve** sends it. **Deny** sends nothing.
-
-![Runner waits for approval before sending the request](images/approve-request.png)
-
-- 📊 **QA Analyst** reports which runs matched and which failed, from your feedback and the real responses. It does not edit application code.
-
-Ask **give me analysis**. In this example the analyst says 2 passed and 0 failed, and offers **How many passed and failed**, **List passed**, and **List failed**.
-
-![Analyst reports 2 passed and 0 failed](images/qa-analyst.png)
+Ask it to scan the Swagger URL. It speaks the endpoint count, then offers the next step.
 
 ## 🎤 How I run voice
 
-I Use WhisperModel Speech recognition .to avoid run model local ,  i  runs in a [Colab notebook](https://colab.research.google.com/drive/1jNvVrO3vogy7DY1EViBYRe3Ch7N8ias8?usp=sharing). Put your own ngrok token in that notebook first, then run it. ngrok gives the notebook a public address, and the console calls that address.
+I use Whisper for speech recognition. To avoid running the model on this computer, it runs in a [Colab notebook](https://colab.research.google.com/drive/1jNvVrO3vogy7DY1EViBYRe3Ch7N8ias8?usp=sharing). Put your own ngrok token in that notebook first, then run it. ngrok gives the notebook a public address, and the console calls that address.
 
 In **Settings → Voice & Agents**, set **Speech recognition** to **Local · Whisper-compatible server**. Paste the ngrok address into **ASR server base URL**.
 
@@ -34,18 +29,18 @@ Hold the microphone and speak. The console shows **Received — voice note**, th
 
 ![Console received the voice note and is transcribing it](images/voice-transcribing.png)
 
-## 🔗 How I integrate my agents
+## 🔗 How it connects
 
-The voice model only turns speech into text. A second model writes the reply.
+The console does not run the skills. `Testing-Agent-main/src/routes/api/agent.ts` sends the chat to the OpenClaw gateway at `http://localhost:18789` with model `openclaw/default`. The gateway reads `Testing-Agent-main/openclaw/` and hands the four skills to the model.
 
-I use **OpenRouter** for that reply. Its cloud address is `https://openrouter.ai/api/v1`. In **Settings → Models**, I choose OpenRouter, paste my OpenRouter key, and pick a model. The console sends the conversation there. OpenRouter runs the model and sends the answer back. The console then speaks that answer.
+`OPENCLAW_API_KEY` in `.env` must be the gateway token. The agent workspace must be the `Testing-Agent-main/openclaw` folder. Setup steps are in `Testing-Agent-main/openclaw/README.md`.
 
-I also tried **OpenClaw**. That is a gateway on this computer, usually `http://localhost:18789`. The console can send the same conversation to that gateway instead of OpenRouter. OpenRouter is the path I use. OpenClaw is the other path I tried.
+A Cursor agent drafted the agent instructions, the four skills, and the parser. The parser tests check that the endpoint list comes from the document.
 
 ## 📁 What is here
 
-- 🖥️ `Testing-Agent-main` — the voice console and the starting QA squad (agents, skills, and session).
-- 🧪 `demo-darkcoders-test` — a small local backend. The reader takes its Swagger URL.
+- 🖥️ `Testing-Agent-main` — the voice console, the API tester, and its skills.
+- 🧪 `demo-darkcoders-test` — a small local backend whose Swagger URL the tester can scan.
 
 ## ✨ Extensions
 

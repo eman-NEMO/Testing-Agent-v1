@@ -1,0 +1,15 @@
+# Reviewer copy of the gateway settings. OpenClaw does not load this file.
+# The live config is ~/.openclaw/openclaw.json. Keep the token out of this repo.
+gateway:
+  port: 18789
+  auth:
+    mode: token
+    token: set-in-openclaw-json-and-dotenv
+  http:
+    endpoints:
+      chatCompletions:
+        enabled: true
+agents:
+  defaults:
+    workspace: D:/Testing-Agent-v1/Testing-Agent-main/openclaw
+    model: openclaw/default

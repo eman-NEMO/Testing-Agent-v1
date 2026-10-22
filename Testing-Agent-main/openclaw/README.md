@@ -1,28 +1,37 @@
-# QA Squad
+# API tester
 
-Three voice agents that test an API you provide. They do not ship with a fixed endpoint list.
+The voice console can scan a Swagger or OpenAPI JSON document, suggest functional cases from that document, keep extra requirements you type, and speak an analysis of what was actually run.
 
-## Run
+Read-only skills are `fetch-spec` and `suggest-cases`. `run-case` and `write-report` wait for Approve in the console.
 
-1. Start your API. It should serve its Swagger file, such as `GET /swagger.json` or `GET /openapi.json`, or you can attach that file in the console.
-2. Start this console from the repo root: `npm install`, then `npm run dev`.
-3. In **Settings → Voice & Agents**, choose **QA Reader**.
-4. Say “Test my API”, then attach the Swagger file or give its URL, such as `http://127.0.0.1:4011/swagger.json`. The reader fetches that address on whatever host you give. A host with no path is tried at `/swagger.json`, then `/openapi.json`. The reader follows schemas referenced inside that document.
-5. The runner shows one case at a time for the area you name, for example “Test users”. Each case shows the method, URL, request body, and expected status. Use **Next case** and **Previous case** to move. If a case needs an existing id, say `existing id 42`. If you want a duplicate-email case, say `existing email ada@example.com expects 409`.
-6. Choose **Run this case** or **Run all of these**. You can also give a case that was not suggested, such as `Run POST /api/login body {"email":"ada@example.com"}`. Approve the card before any request is sent. Deny sends nothing.
-7. The runner then shows that call with its real status and response body. If you did not give an expected status, say **This was expected** or `it should return HTTP 400`. Switch to **QA Analyst** and ask `How many passed and failed`, `List passed`, `List failed`, or `List ran tests about users`.
+## What talks to what
 
-Any `http` or `https` host you give is fetched. Requests are still sent only after you approve them.
+The console does not load this folder. `src/routes/api/agent.ts` sends the chat to `POST http://localhost:18789/v1/chat/completions` with model `openclaw/default`. OpenClaw loads these skills when this directory is the agent workspace.
 
-## Layout
+The console agent id is `api-tester`, registered in `src/lib/settings/voice.ts`.
 
-- `agents/qa-reader.md`, `qa-runner.md`, `qa-analyst.md` — the three roles
-- `skills/requirements-analysis.md`, `test-design.md`, `api-testing.md`, `failure-triage.md` — the rules those roles follow
-- `skills/qa.ts` — parsing, scenario suggestions, approved calls, and the comparison
-- `data/qa-session.json` — created when a spec is stored
+## Gateway setup
 
-A corrupt session file is reported and left unchanged.
+Do this on the machine that runs OpenClaw. The live file is `~/.openclaw/openclaw.json`. `gateway.yaml` is only a copy for review, and it contains no real token.
 
-## Safety limits
+1. Install OpenClaw and run `openclaw onboard`. Choose a real model there.
+2. In `~/.openclaw/openclaw.json`, set port `18789`, enable `gateway.http.endpoints.chatCompletions`, set `gateway.auth.mode` to `token`, and set `agents.defaults.workspace` to this `openclaw` directory.
+3. Put the same token in the app `.env` as `OPENCLAW_API_KEY`. Set `OPENCLAW_GATEWAY_URL` to `http://localhost:18789`.
+4. Restart the gateway.
 
-The squad does not edit application code. It calls the host in the URL you give, and only after approval. A batch that creates data is marked on the approval card. Expected statuses come from the spec you supplied. A rule the spec does not mention is left out of the plan.
+```bash
+curl -sS http://127.0.0.1:18789/v1/models -H "Authorization: Bearer the-gateway-token"
+openclaw skills list
+```
+
+`/v1/models` should include `openclaw/default`. `openclaw skills list` should include `fetch-spec`, `suggest-cases`, `run-case`, and `write-report`. If the skills are missing, the workspace path is not this folder, or a `SKILL.md` has no `name` and `description`. `openclaw skills check` shows skills that were found but hidden.
+
+## Try it
+
+In the console, choose **API tester** and say: scan the Swagger at your JSON URL.
+
+The parser is `skills/suggest-cases/scripts/parse-openapi.mjs`. It accepts an OpenAPI 3 or Swagger 2 JSON document. A YAML URL returns a real error asking for JSON. Suggested cases cover the documented success status, a missing required field, and auth only when the spec declares security. Live calls go through `skills/run-case/scripts/run-case.mjs` and only after approval. Approved reports are written under `reports/`.
+
+## Where AI helped
+
+A Cursor agent drafted the agent instructions, the four skills, and the parser. The parser tests check that endpoints come from the document. The gateway, the model key, and a real hosted spec still have to be connected on this machine.

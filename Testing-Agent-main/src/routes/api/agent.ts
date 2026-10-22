@@ -3,14 +3,6 @@ import { OUTPUT_FORMAT, SYSTEM_PROMPT, planContextMessage } from "@/lib/voice/pr
 
 type Turn = { role: "user" | "assistant"; text: string };
 
-/** The console reads /api/agent as a stream, so a finished QA screen is one output delta. */
-function screenStream(text: string) {
-  const payload = JSON.stringify({ type: "response.output_text.delta", delta: text });
-  return new Response(`data: ${payload}\n\n`, {
-    headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
-  });
-}
-
 export const Route = createFileRoute("/api/agent")({
   server: {
     handlers: {
@@ -35,15 +27,6 @@ export const Route = createFileRoute("/api/agent")({
           });
         }
 
-        const { agentIdFromContext, defaultDataDir, isQaAgent, openSquad, prepareQaTurn } = await import("@/lib/qa/squad");
-        const qaId = agentIdFromContext(context);
-        let brief: string | null = null;
-        if (isQaAgent(qaId)) {
-          const prepared = await prepareQaTurn(openSquad({ dir: defaultDataDir() }), turns, qaId ?? "qa");
-          if (prepared.handled) return screenStream(prepared.text);
-          brief = prepared.brief;
-        }
-
         const { resolveGatewayModel } = await import("@/lib/ai/models");
         const model = resolveGatewayModel(modelName);
         if (!model) {
@@ -56,7 +39,6 @@ export const Route = createFileRoute("/api/agent")({
         const input: Record<string, unknown>[] = [
           { role: "system", content: [{ type: "input_text", text: SYSTEM_PROMPT }] },
           ...(plan ? [{ role: "system", content: [{ type: "input_text", text: plan }] }] : []),
-          ...(brief ? [{ role: "system", content: [{ type: "input_text", text: brief }] }] : []),
           ...turns.slice(-12).map((turn) => ({
             role: turn.role,
             content: [

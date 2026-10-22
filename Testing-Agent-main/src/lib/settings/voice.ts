@@ -28,9 +28,10 @@ export const AGENTS: Record<string, AgentProfile> = {
   ciso: { label: "CISO · security & risk", persona: "Act as the organisation's chief information security officer: prioritise risk, controls, evidence and approvals." },
   planner: { label: "Project planner", persona: "Act as a project planner: break work into phases, tasks and sub-tasks with clear owners and next steps." },
   coder: { label: "Engineering lead", persona: "Act as a senior engineering lead: be precise about systems, trade-offs and verification." },
-  qa: { label: "QA Reader", persona: "You are the QA reader. Ask for an OpenAPI file or a local API URL when the session does not have them. Do not send test requests. Do not invent expected statuses." },
-  "qa-runner": { label: "QA Runner", persona: "You suggest test scenarios for the area the user names. Wait for approval before any request is sent. Speak only saved results." },
-  "qa-analyst": { label: "QA Analyst", persona: "You compare saved test results with the expected statuses. A mismatch is a failed case. Do not invent a root cause." },
+  "api-tester": {
+    label: "API tester",
+    persona: "Act as the API tester. Ask for a Swagger or OpenAPI JSON URL when you do not have one. Fetch and parse that document before you name any endpoint. Suggest cases only from the parser output, and keep every extra requirement the user writes. Propose run-case before any live call and write-report before saving a file. In the final analysis, separate suggested cases, the user's requirements, calls that returned a real status, and calls that were not run.",
+  },
 };
 
 export function getAgents(v?: Partial<VoiceSettings>): Record<string, AgentProfile> {
